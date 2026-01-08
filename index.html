@@ -51,6 +51,27 @@
             width: 80%;
         }
         
+        #pause-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9;
+            border-radius: 4px;
+        }
+
+        #pause-screen h2 {
+            color: #4CAF50;
+            font-size: 32px;
+            text-shadow: 0 0 15px rgba(76, 175, 80, 0.8);
+            margin: 0;
+        }
+        
         #game-over h2 {
             color: #f44336;
             margin-top: 0;
@@ -90,8 +111,12 @@
     <div id="game-container">
         <canvas id="game-board" width="400" height="400"></canvas>
         <div id="score">分數: 0</div>
-        <div id="instructions">使用方向鍵控制蛇的移動</div>
+        <div id="instructions">使用方向鍵控制蛇的移動，按空白鍵暫停</div>
         
+        <div id="pause-screen">
+            <h2>暫停中...</h2>
+        </div>
+
         <div id="game-over">
             <h2>遊戲結束!</h2>
             <div id="final-score">分數: 0</div>
@@ -107,6 +132,7 @@
         const finalScoreDisplay = document.getElementById('final-score');
         const gameOverScreen = document.getElementById('game-over');
         const restartBtn = document.getElementById('restart-btn');
+        const pauseScreen = document.getElementById('pause-screen');
         
         // 遊戲設定
         const gridSize = 20;
@@ -122,6 +148,7 @@
         let score = 0;
         let gameSpeed = initialSpeed;
         let gameRunning = false;
+        let gamePaused = false;
         let gameLoop;
         
         // 初始化遊戲
@@ -142,13 +169,15 @@
             score = 0;
             gameSpeed = initialSpeed;
             gameRunning = true;
+            gamePaused = false;
             
             // 更新分數顯示
             scoreDisplay.textContent = `分數: ${score}`;
             finalScoreDisplay.textContent = `分數: ${score}`;
             
-            // 隱藏遊戲結束畫面
+            // 隱藏遊戲結束與暫停畫面
             gameOverScreen.style.display = 'none';
+            pauseScreen.style.display = 'none';
             
             // 開始遊戲循環
             if (gameLoop) clearInterval(gameLoop);
@@ -182,6 +211,8 @@
         
         // 更新遊戲狀態
         function update() {
+            if (gamePaused) return; // 暫停時不更新
+            
             // 更新方向
             direction = nextDirection;
             
@@ -307,14 +338,34 @@
         // 遊戲結束
         function gameOver() {
             gameRunning = false;
+            gamePaused = false;
             clearInterval(gameLoop);
             finalScoreDisplay.textContent = `分數: ${score}`;
             gameOverScreen.style.display = 'block';
+            pauseScreen.style.display = 'none';
+        }
+
+        // 切換暫停狀態
+        function togglePause() {
+            if (!gameRunning) return;
+            
+            gamePaused = !gamePaused;
+            pauseScreen.style.display = gamePaused ? 'flex' : 'none';
         }
         
         // 鍵盤事件處理
         document.addEventListener('keydown', (e) => {
             if (!gameRunning) return;
+            
+            // 空格鍵切換暫停
+            if (e.code === 'Space') {
+                togglePause();
+                e.preventDefault(); // 防止頁面滾動
+                return;
+            }
+
+            // 暫停中不處理方向鍵
+            if (gamePaused) return;
             
             // 防止180度轉向
             switch (e.key) {
@@ -335,6 +386,9 @@
         
         // 重新開始按鈕
         restartBtn.addEventListener('click', initGame);
+        
+        // 點擊暫停畫面也可恢復遊戲
+        pauseScreen.addEventListener('click', togglePause);
         
         // 開始遊戲
         initGame();
