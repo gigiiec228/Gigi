@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>貪食蛇遊戲</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #000;
+            font-family: 'Arial', sans-serif;
+            color: white;
+            overflow: hidden;
+        }
+        
+        #game-container {
+            position: relative;
+            width: 400px;
+            text-align: center;
+        }
+        
+        #game-board {
+            background-color: #000;
+            border: 2px solid #333;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
+        }
+        
+        #score {
+            margin-top: 15px;
+            font-size: 24px;
+            color: #4CAF50;
+            text-shadow: 0 0 10px rgba(76, 175, 80, 0.7);
+        }
+        
+        #game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.85);
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #f44336;
+            display: none;
+            z-index: 10;
+            width: 80%;
+        }
+        
+        #pause-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9;
+            border-radius: 4px;
+        }
+
+        #pause-screen h2 {
+            color: #4CAF50;
+            font-size: 32px;
+            text-shadow: 0 0 15px rgba(76, 175, 80, 0.8);
+            margin: 0;
+        }
+        
+        #game-over h2 {
+            color: #f44336;
+            margin-top: 0;
+            text-shadow: 0 0 10px rgba(244, 67, 54, 0.7);
+        }
+        
+        #final-score {
+            font-size: 20px;
+            margin: 15px 0;
+            color: #4CAF50;
+        }
+        
+        #restart-btn {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 18px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        #restart-btn:hover {
+            background-color: #45a049;
+            box-shadow: 0 0 15px rgba(76, 175, 80, 0.7);
+        }
+        
+        #instructions {
+            margin-top: 15px;
+            color: #aaa;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="game-board" width="400" height="400"></canvas>
+        <div id="score">分數: 0</div>
+        <div id="instructions">使用方向鍵控制蛇的移動，按空白鍵暫停</div>
+        
+        <div id="pause-screen">
+            <h2>暫停中...</h2>
+        </div>
+
+        <div id="game-over">
+            <h2>遊戲結束!</h2>
+            <div id="final-score">分數: 0</div>
+            <button id="restart-btn">重新開始</button>
+        </div>
+    </div>
+
+    <script>
+        // 遊戲變數
+        const canvas = document.getElementById('game-board');
+        const ctx = canvas.getContext('2d');
+        const scoreDisplay = document.getElementById('score');
+        const finalScoreDisplay = document.getElementById('final-score');
+        const gameOverScreen = document.getElementById('game-over');
+        const restartBtn = document.getElementById('restart-btn');
+        const pauseScreen = document.getElementById('pause-screen');
+        
+        // 遊戲設定
+        const gridSize = 20;
+        const gridWidth = canvas.width / gridSize;
+        const gridHeight = canvas.height / gridSize;
+        const initialSpeed = 120; // 毫秒
+        
+        // 遊戲狀態
+        let snake = [];
+        let food = {};
+        let direction = 'right';
+        let nextDirection = 'right';
+        let score = 0;
+        let gameSpeed = initialSpeed;
+        let gameRunning = false;
+        let gamePaused = false;
+        let gameLoop;
+        
+        // 初始化遊戲
+        function initGame() {
+            // 初始化蛇 (從中間開始)
+            snake = [
+                {x: 10, y: 10},
+                {x: 9, y: 10},
+                {x: 8, y: 10}
+            ];
+            
+            // 生成第一個食物
+            generateFood();
+            
+            // 重置遊戲狀態
+            direction = 'right';
+            nextDirection = 'right';
+            score = 0;
+            gameSpeed = initialSpeed;
+            gameRunning = true;
+            gamePaused = false;
+            
+            // 更新分數顯示
+            scoreDisplay.textContent = `分數: ${score}`;
+            finalScoreDisplay.textContent = `分數: ${score}`;
+            
+            // 隱藏遊戲結束與暫停畫面
+            gameOverScreen.style.display = 'none';
+            pauseScreen.style.display = 'none';
+            
+            // 開始遊戲循環
+            if (gameLoop) clearInterval(gameLoop);
+            gameLoop = setInterval(update, gameSpeed);
+        }
+        
+        // 生成食物
+        function generateFood() {
+            // 確保食物不會出現在蛇身上
+            let newFood;
+            let foodOnSnake;
+            
+            do {
+                foodOnSnake = false;
+                newFood = {
+                    x: Math.floor(Math.random() * gridWidth),
+                    y: Math.floor(Math.random() * gridHeight)
+                };
+                
+                // 檢查食物是否在蛇身上
+                for (let segment of snake) {
+                    if (segment.x === newFood.x && segment.y === newFood.y) {
+                        foodOnSnake = true;
+                        break;
+                    }
+                }
+            } while (foodOnSnake);
+            
+            food = newFood;
+        }
+        
+        // 更新遊戲狀態
+        function update() {
+            if (gamePaused) return; // 暫停時不更新
+            
+            // 更新方向
+            direction = nextDirection;
+            
+            // 計算新蛇頭位置
+            const head = {...snake[0]};
+            
+            switch (direction) {
+                case 'up':
+                    head.y--;
+                    break;
+                case 'down':
+                    head.y++;
+                    break;
+                case 'left':
+                    head.x--;
+                    break;
+                case 'right':
+                    head.x++;
+                    break;
+            }
+            
+            // 檢查碰撞
+            if (checkCollision(head)) {
+                gameOver();
+                return;
+            }
+            
+            // 將新蛇頭加入蛇身
+            snake.unshift(head);
+            
+            // 檢查是否吃到食物
+            if (head.x === food.x && head.y === food.y) {
+                // 增加分數
+                score += 10;
+                scoreDisplay.textContent = `分數: ${score}`;
+                
+                // 生成新食物
+                generateFood();
+                
+                // 每吃到5個食物，遊戲加速
+                if (score % 50 === 0 && gameSpeed > 60) {
+                    gameSpeed -= 10;
+                    clearInterval(gameLoop);
+                    gameLoop = setInterval(update, gameSpeed);
+                }
+            } else {
+                // 沒有吃到食物，移除蛇尾
+                snake.pop();
+            }
+            
+            // 繪製遊戲
+            draw();
+        }
+        
+        // 檢查碰撞
+        function checkCollision(position) {
+            // 檢查是否撞牆
+            if (
+                position.x < 0 || 
+                position.x >= gridWidth || 
+                position.y < 0 || 
+                position.y >= gridHeight
+            ) {
+                return true;
+            }
+            
+            // 檢查是否撞到自己 (跳過蛇頭)
+            for (let i = 1; i < snake.length; i++) {
+                if (position.x === snake[i].x && position.y === snake[i].y) {
+                    return true;
+                }
+            }
+            
+            return false;
+        }
+        
+        // 繪製遊戲
+        function draw() {
+            // 清空畫布
+            ctx.fillStyle = 'black';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // 繪製蛇
+            snake.forEach((segment, index) => {
+                if (index === 0) {
+                    // 蛇頭用亮綠色
+                    ctx.fillStyle = '#4CAF50';
+                } else {
+                    // 蛇身用深綠色
+                    ctx.fillStyle = '#2E7D32';
+                }
+                
+                ctx.fillRect(
+                    segment.x * gridSize, 
+                    segment.y * gridSize, 
+                    gridSize - 1, 
+                    gridSize - 1
+                );
+            });
+            
+            // 繪製食物 (紅色蘋果)
+            ctx.fillStyle = '#f44336';
+            ctx.beginPath();
+            ctx.arc(
+                food.x * gridSize + gridSize/2,
+                food.y * gridSize + gridSize/2,
+                gridSize/2 - 2,
+                0,
+                Math.PI * 2
+            );
+            ctx.fill();
+            
+            // 繪製蘋果柄
+            ctx.fillStyle = '#8B4513';
+            ctx.fillRect(
+                food.x * gridSize + gridSize/2 - 2,
+                food.y * gridSize - 2,
+                4,
+                6
+            );
+        }
+        
+        // 遊戲結束
+        function gameOver() {
+            gameRunning = false;
+            gamePaused = false;
+            clearInterval(gameLoop);
+            finalScoreDisplay.textContent = `分數: ${score}`;
+            gameOverScreen.style.display = 'block';
+            pauseScreen.style.display = 'none';
+        }
+
+        // 切換暫停狀態
+        function togglePause() {
+            if (!gameRunning) return;
+            
+            gamePaused = !gamePaused;
+            pauseScreen.style.display = gamePaused ? 'flex' : 'none';
+        }
+        
+        // 鍵盤事件處理
+        document.addEventListener('keydown', (e) => {
+            if (!gameRunning) return;
+            
+            // 空格鍵切換暫停
+            if (e.code === 'Space') {
+                togglePause();
+                e.preventDefault(); // 防止頁面滾動
+                return;
+            }
+
+            // 暫停中不處理方向鍵
+            if (gamePaused) return;
+            
+            // 防止180度轉向
+            switch (e.key) {
+                case 'ArrowUp':
+                    if (direction !== 'down') nextDirection = 'up';
+                    break;
+                case 'ArrowDown':
+                    if (direction !== 'up') nextDirection = 'down';
+                    break;
+                case 'ArrowLeft':
+                    if (direction !== 'right') nextDirection = 'left';
+                    break;
+                case 'ArrowRight':
+                    if (direction !== 'left') nextDirection = 'right';
+                    break;
+            }
+        });
+        
+        // 重新開始按鈕
+        restartBtn.addEventListener('click', initGame);
+        
+        // 點擊暫停畫面也可恢復遊戲
+        pauseScreen.addEventListener('click', togglePause);
+        
+        // 開始遊戲
+        initGame();
+    </script>
+</body>
+</html>
