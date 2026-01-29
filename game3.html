@@ -5,6 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Block Blast! Pro (Fixed)</title>
+    <!-- Accessibility improvements -->
+    <meta name="description" content="Block Blast益智遊戲，支持鍵盤和觸控操作，包含主題切換">
     <style>
         /* Force light mode by default - prevents system dark mode override */
         :root {
@@ -440,39 +442,180 @@
             transform: translateY(4px);
             box-shadow: none;
         }
+
+        /* Accessibility improvements */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        button:focus,
+        .piece:focus,
+        .theme-toggle:focus,
+        .settings-btn:focus {
+            outline: 3px solid var(--c3-main);
+            outline-offset: 2px;
+            border-radius: 4px;
+        }
+
+        .skip-link {
+            position: absolute;
+            top: -40px;
+            left: 0;
+            background: var(--c1-main);
+            color: white;
+            padding: 8px;
+            text-decoration: none;
+            border-radius: 0 0 4px 0;
+            z-index: 1001;
+        }
+
+        .skip-link:focus {
+            top: 0;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+
+        .keyboard-navigator {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            border: 2px solid var(--c3-main);
+            border-radius: 3px;
+            pointer-events: none;
+            z-index: 10;
+            display: none;
+        }
+
+        .keyboard-navigator.active {
+            display: block;
+        }
+
+        /* 成就系統樣式 */
+        .achievements-btn {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background: rgba(255, 107, 107, 0.9);
+            border: none;
+            color: white;
+            padding: 8px 12px;
+            font-size: 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            z-index: 1000;
+            transition: all 0.3s;
+        }
+
+        .achievements-btn:hover {
+            background: rgba(255, 107, 107, 1);
+            transform: scale(1.1);
+        }
+
+        .stats-panel {
+            position: fixed;
+            top: 60px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            z-index: 999;
+            min-width: 150px;
+            backdrop-filter: blur(5px);
+        }
+
+        .stat-item {
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .stat-value {
+            color: var(--c3-main);
+            font-weight: bold;
+        }
+
+        @keyframes achievementSlide3 {
+            0% { transform: translateX(-50%) translateY(-100px); opacity: 0; }
+            100% { transform: translateX(-50%) translateY(0); opacity: 1; }
+        }
     </style>
 </head>
 
 <body>
-
+    <a href="#game-grid" class="skip-link">跳至遊戲網格</a>
     <div class="game-container">
-        <header>
+        <header role="banner">
+            <!-- 成就按鈕 -->
+            <button class="achievements-btn" id="achievementsBtn3" aria-label="查看成就">🏆</button>
+            
             <div class="high-score-container">
-                <svg class="crown-icon" viewBox="0 0 24 24">
+                <svg class="crown-icon" viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3c0 .6-.4 1-1 1H6c-.6 0-1-.4-1-1v-1h14v1z" />
                 </svg>
-                <span class="high-score-text" id="best-score">0</span>
+                <span class="high-score-text" id="best-score" aria-live="polite">0</span>
             </div>
             <div class="header-right">
-                <button id="btn-theme" class="theme-toggle" title="切換主題">
-                    <span class="icon" id="theme-icon">☀️</span>
+                <button id="btn-theme" class="theme-toggle" aria-label="切換主題" aria-pressed="false">
+                    <span class="icon" id="theme-icon" aria-hidden="true">☀️</span>
                 </button>
-                <button id="btn-restart" class="settings-btn" title="Restart">⚙</button>
+                <button id="btn-restart" class="settings-btn" aria-label="重新開始遊戲">⚙</button>
             </div>
         </header>
+        
+        <!-- 統計面板 -->
+        <div class="stats-panel" id="statsPanel3" aria-label="遊戲統計">
+            <div class="stat-item">
+                <span>連擊:</span>
+                <span class="stat-value" id="comboStat3">0</span>
+            </div>
+            <div class="stat-item">
+                <span>最佳連擊:</span>
+                <span class="stat-value" id="bestComboStat3">0</span>
+            </div>
+            <div class="stat-item">
+                <span>消除線條:</span>
+                <span class="stat-value" id="linesStat3">0</span>
+            </div>
+            <div class="stat-item">
+                <span>放置積木:</span>
+                <span class="stat-value" id="blocksStat3">0</span>
+            </div>
+        </div>
 
-        <div class="score-display-container">
+        <div class="score-display-container" role="status" aria-live="polite">
             <span class="current-score-text" id="current-score">0</span>
         </div>
 
         <main>
-            <div id="grid"></div>
+            <div id="game-grid" role="application" aria-label="Block Blast遊戲網格，使用Tab鍵選擇積木，方向鍵移動，Enter放置" tabindex="0">
+                <div class="keyboard-navigator" aria-hidden="true"></div>
+                <div id="grid"></div>
+            </div>
         </main>
 
-        <div id="piece-container">
-            <div class="piece-slot" id="slot-0"></div>
-            <div class="piece-slot" id="slot-1"></div>
-            <div class="piece-slot" id="slot-2"></div>
+        <div id="piece-container" role="region" aria-label="可用積木">
+            <div class="piece-slot" id="slot-0" role="group" aria-label="第一個積木槽位"></div>
+            <div class="piece-slot" id="slot-1" role="group" aria-label="第二個積木槽位"></div>
+            <div class="piece-slot" id="slot-2" role="group" aria-label="第三個積木槽位"></div>
         </div>
     </div>
 
@@ -574,57 +717,118 @@
             setTimeout(calculateLayout, 100);
         });
 
-        // --- Audio System ---
-        class SoundManager {
-            constructor() {
-                this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-                this.enabled = true;
-                this.masterGain = this.ctx.createGain();
-                this.masterGain.gain.value = 0.4;
-                this.masterGain.connect(this.ctx.destination);
-            }
-            resume() {
-                if (this.ctx.state === 'suspended') this.ctx.resume();
-            }
-            playTone(freq, type, duration, vol = 0.1) {
-                if (!this.enabled) return;
-                const osc = this.ctx.createOscillator();
-                const gain = this.ctx.createGain();
-                osc.type = type;
-                osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
-                gain.gain.setValueAtTime(vol, this.ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
-                osc.connect(gain);
-                gain.connect(this.masterGain);
-                osc.start();
-                osc.stop(this.ctx.currentTime + duration);
-            }
-            playPickup() {
-                this.playTone(800, 'sine', 0.1, 0.1);
-                setTimeout(() => this.playTone(1200, 'sine', 0.1, 0.1), 30);
-            }
-            playPlace() {
-                this.playTone(150, 'triangle', 0.1, 0.3);
-                this.playTone(100, 'sine', 0.1, 0.3);
-            }
-            playClear(lines) {
-                this.playTone(110, 'square', 0.15, 0.15);
+// --- 增強音效系統 ---
+    class EnhancedSoundManager3 {
+        constructor() {
+            this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+            this.enabled = true;
+            this.masterGain = this.ctx.createGain();
+            this.masterGain.gain.value = 0.4;
+            this.masterGain.connect(this.ctx.destination);
+        }
+        
+        resume() {
+            if (this.ctx.state === 'suspended') this.ctx.resume();
+        }
+        
+        playTone(freq, type, duration, vol = 0.1) {
+            if (!this.enabled) return;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+            gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(this.masterGain);
+            osc.start();
+            osc.stop(this.ctx.currentTime + duration);
+        }
+        
+        playSound(name, variations = 1) {
+            const sounds = {
+                pickup: { freq: 800, duration: 0.1, type: 'sine', volume: 0.1 },
+                place: { freq: 150, duration: 0.1, type: 'triangle', volume: 0.3 },
+                clear: { freq: 110, duration: 0.15, type: 'square', volume: 0.15 },
+                gameOver: { freq: 300, duration: 0.5, type: 'sawtooth', volume: 0.2 },
+                achievement: { freq: 1200, duration: 0.4, type: 'sine', volume: 0.15 },
+                button: { freq: 400, duration: 0.06, type: 'square', volume: 0.08 },
+                combo: { freq: 600, duration: 0.2, type: 'triangle', volume: 0.12 },
+                perfect: { freq: 1000, duration: 0.3, type: 'sine', volume: 0.15 }
+            };
+            
+            const sound = sounds[name];
+            if (!sound) return;
+            
+            this.resume();
+            
+            // 添加音調變化
+            const pitch = 1 + (Math.random() - 0.5) * 0.1 * variations;
+            this.playTone(sound.freq * pitch, sound.type, sound.duration, sound.volume);
+            
+            // 特殊音效處理
+            if (name === 'pickup') {
+                setTimeout(() => {
+                    this.playTone(1200 * pitch, 'sine', 0.1, 0.08);
+                }, 30);
+            } else if (name === 'clear') {
                 const notes = [523.25, 659.25, 783.99, 1046.50];
                 notes.forEach((note, i) => {
                     setTimeout(() => {
-                        this.playTone(note, 'sine', 0.4, 0.15);
-                        this.playTone(note * 1.01, 'triangle', 0.2, 0.05);
+                        this.playTone(note * pitch, 'sine', 0.4, 0.15);
+                        this.playTone(note * 1.01 * pitch, 'triangle', 0.2, 0.05);
                     }, i * 40);
                 });
-                if (lines > 1) this.playTone(80, 'sawtooth', 0.3, 0.1);
-            }
-            playGameOver() {
-                this.playTone(300, 'sawtooth', 0.5, 0.2);
-                setTimeout(() => this.playTone(200, 'sawtooth', 0.5, 0.2), 300);
-                setTimeout(() => this.playTone(100, 'sawtooth', 1.0, 0.2), 600);
+            } else if (name === 'gameOver') {
+                setTimeout(() => {
+                    this.playTone(200 * pitch, 'sawtooth', 0.5, 0.2);
+                }, 300);
+                setTimeout(() => {
+                    this.playTone(100 * pitch, 'sawtooth', 1.0, 0.2);
+                }, 600);
             }
         }
-        const sfx = new SoundManager();
+        
+        playPickup() {
+            this.playSound('pickup');
+        }
+        
+        playPlace() {
+            this.playSound('place');
+        }
+        
+        playClear(lines) {
+            this.playSound('clear');
+            if (lines > 1) {
+                setTimeout(() => {
+                    this.playTone(80, 'sawtooth', 0.3, 0.1);
+                }, 200);
+            }
+        }
+        
+        playGameOver() {
+            this.playSound('gameOver');
+        }
+        
+        playComboSound(level) {
+            const baseFreq = 400 + (level * 100);
+            this.playTone(baseFreq, 'triangle', 0.2, 0.12);
+            setTimeout(() => {
+                this.playTone(baseFreq * 1.5, 'sine', 0.2, 0.08);
+            }, 100);
+        }
+        
+        setVolume(level) {
+            this.masterGain.gain.value = Math.max(0, Math.min(1, level));
+        }
+        
+        toggle() {
+            this.enabled = !this.enabled;
+            return this.enabled;
+        }
+    }
+    
+    const sfx = new EnhancedSoundManager3();
 
         // --- Game Config ---
         const GRID_SIZE = 8;
@@ -661,6 +865,179 @@
         let dragElement = null;
         let dragOffset = { x: 0, y: 0 };
         let originalSlotIndex = -1;
+        
+        // 統計和成就系統
+        const playerStats = JSON.parse(localStorage.getItem('blockBlastStats')) || {
+            totalPlayTime: 0,
+            totalScore: 0,
+            gamesPlayed: 0,
+            linesCleared: 0,
+            blocksPlaced: 0,
+            perfectGames: 0,
+            bestCombo: 0,
+            currentCombo: 0,
+            achievements: [],
+            settings: {
+                soundEnabled: true,
+                hapticEnabled: true,
+                showHints: true
+            }
+        };
+
+        // 成就系統
+        const achievements3 = {
+            firstLine: { id: 'firstLine', name: '初次消除', desc: '完成第一次線條消除', icon: '✨' },
+            combo5: { id: 'combo5', name: '連擊新手', desc: '達成5連擊', icon: '🔥' },
+            combo10: { id: 'combo10', name: '連擊高手', desc: '達成10連擊', icon: '⚡' },
+            perfectClear: { id: 'perfectClear', name: '完美清除', desc: '同時清除多條線', icon: '💫' },
+            blockMaster: { id: 'blockMaster', name: '積木大師', desc: '放置500個積木', icon: '🎯' },
+            speedRunner: { id: 'speedRunner', name: '速度玩家', desc: '2分鐘內得分超過1000', icon: '🚀' },
+            perfectionist: { id: 'perfectionist', name: '完美主義', desc: '無失誤完成10局', icon: '💎' },
+            veteran: { id: 'veteran', name: '老玩家', desc: '完成100局遊戲', icon: '🏆' },
+            highScorer: { id: 'highScorer', name: '高分玩家', desc: '單局得分超過5000', icon: '👑' }
+        };
+
+        // 統計管理器
+        class GameStatistics3 {
+            constructor() {
+                this.sessionStartTime = Date.now();
+                this.currentGameStartTime = null;
+                this.sessionMoves = 0;
+            }
+
+            startGame() {
+                this.currentGameStartTime = Date.now();
+                this.sessionMoves = 0;
+                playerStats.currentCombo = 0;
+            }
+
+            recordBlockPlacement() {
+                playerStats.blocksPlaced++;
+                playerStats.totalScore = Math.max(playerStats.totalScore, score);
+                this.sessionMoves++;
+                
+                // 檢查積木大師成就
+                if (playerStats.blocksPlaced >= 500 && !this.hasAchievement('blockMaster')) {
+                    this.unlockAchievement(achievements3.blockMaster);
+                }
+            }
+
+            recordLineClear(linesCleared) {
+                playerStats.linesCleared += linesCleared;
+                
+                // 首次消除
+                if (playerStats.linesCleared > 0 && !this.hasAchievement('firstLine')) {
+                    this.unlockAchievement(achievements3.firstLine);
+                }
+                
+                // 完美清除
+                if (linesCleared > 1 && !this.hasAchievement('perfectClear')) {
+                    this.unlockAchievement(achievements3.perfectClear);
+                }
+                
+                // 連擊系統
+                playerStats.currentCombo += linesCleared;
+                if (playerStats.currentCombo >= 5 && !this.hasAchievement('combo5')) {
+                    this.unlockAchievement(achievements3.combo5);
+                }
+                if (playerStats.currentCombo >= 10 && !this.hasAchievement('combo10')) {
+                    this.unlockAchievement(achievements3.combo10);
+                }
+                
+                // 更新最佳連擊
+                if (playerStats.currentCombo > playerStats.bestCombo) {
+                    playerStats.bestCombo = playerStats.currentCombo;
+                }
+                
+                return linesCleared;
+            }
+
+            endGame(finalScore) {
+                if (!this.currentGameStartTime) return;
+
+                const gameDuration = Date.now() - this.currentGameStartTime;
+                
+                // 更新統計
+                playerStats.totalPlayTime += gameDuration;
+                playerStats.gamesPlayed++;
+                
+                // 速度成就
+                if (gameDuration < 120000 && finalScore >= 1000 && !this.hasAchievement('speedRunner')) {
+                    this.unlockAchievement(achievements3.speedRunner);
+                }
+                
+                // 高分成就
+                if (finalScore >= 5000 && !this.hasAchievement('highScorer')) {
+                    this.unlockAchievement(achievements3.highScorer);
+                }
+                
+                // 老玩家成就
+                if (playerStats.gamesPlayed >= 100 && !this.hasAchievement('veteran')) {
+                    this.unlockAchievement(achievements3.veteran);
+                }
+                
+                this.savePlayerData();
+            }
+
+            hasAchievement(id) {
+                return playerStats.achievements.includes(id);
+            }
+
+            unlockAchievement(achievement) {
+                playerStats.achievements.push(achievement.id);
+                sfx.playSound('achievement', 2);
+                showAchievementPopup3(achievement);
+                this.savePlayerData();
+            }
+
+            savePlayerData() {
+                localStorage.setItem('blockBlastStats', JSON.stringify(playerStats));
+            }
+        }
+
+        const stats3 = new GameStatistics3();
+
+        // 成就彈出函數
+        function showAchievementPopup3(achievement) {
+            const popup = document.createElement('div');
+            popup.style.cssText = `
+                position: fixed;
+                top: 20%;
+                left: 50%;
+                transform: translateX(-50%);
+                background: linear-gradient(135deg, #FF6B6B, #4ECDC4);
+                color: white;
+                padding: 20px 30px;
+                border-radius: 15px;
+                z-index: 3000;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+                animation: achievementSlide3 0.5s ease-out;
+            `;
+            
+            popup.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <div style="font-size: 2.5rem;">${achievement.icon}</div>
+                    <div>
+                        <div style="font-size: 1.2rem; font-weight: bold; margin-bottom: 5px;">成就解鎖！</div>
+                        <div style="font-size: 1rem;">${achievement.name}</div>
+                        <div style="font-size: 0.9rem; opacity: 0.9;">${achievement.desc}</div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(popup);
+            
+            // 觸覺反饋
+            if (navigator.vibrate) {
+                navigator.vibrate([20, 30, 20, 30, 20]);
+            }
+            
+            setTimeout(() => {
+                if (popup.parentNode) {
+                    popup.remove();
+                }
+            }, 4000);
+        }
 
         const gridEl = document.getElementById('grid');
         const particlesEl = document.getElementById('particles');
@@ -676,20 +1053,31 @@
         const topRestartBtn = document.getElementById('btn-restart');
 
         // --- Init ---
-        function initGame() {
-            bestScoreEl.innerText = bestScore;
-            createGrid();
-            score = 0;
-            updateScore(0);
-            gridData = Array(GRID_SIZE).fill().map(() => Array(GRID_SIZE).fill(null));
+function initGame() {
+        bestScoreEl.innerText = bestScore;
+        createGrid();
+        score = 0;
+        updateScore(0);
+        gridData = Array(GRID_SIZE).fill().map(() => Array(GRID_SIZE).fill(null));
 
-            // 強制重置積木狀態
-            currentPieces = [null, null, null];
-            slots.forEach(slot => slot.innerHTML = '');
+        // 強制重置積木狀態
+        currentPieces = [null, null, null];
+        slots.forEach(slot => slot.innerHTML = '');
 
-            spawnPieces();
-            modal.style.display = 'none';
-        }
+        // 開始統計
+        stats3.startGame();
+        updateStatsPanel3();
+
+        spawnPieces();
+        modal.style.display = 'none';
+    }
+
+    function updateStatsPanel3() {
+        document.getElementById('comboStat3').textContent = playerStats.currentCombo;
+        document.getElementById('bestComboStat3').textContent = playerStats.bestCombo;
+        document.getElementById('linesStat3').textContent = playerStats.linesCleared;
+        document.getElementById('blocksStat3').textContent = playerStats.blocksPlaced;
+    }
 
         function createGrid() {
             gridEl.innerHTML = '';
@@ -958,6 +1346,15 @@
                 rowsToClear.add(y);
                 colsToClear.add(x);
             });
+            
+            // 記錄積木放置
+            stats3.recordBlockPlacement();
+            
+            // 觸覺反饋
+            if (navigator.vibrate && playerStats.settings.hapticEnabled) {
+                navigator.vibrate(25);
+            }
+            
             checkAndClearLines(rowsToClear, colsToClear);
         }
 
@@ -1016,6 +1413,10 @@
             });
             if (cellsToRemove.length > 0) {
                 sfx.playClear(linesCleared);
+                
+                // 記錄線條消除
+                const actualLinesCleared = stats3.recordLineClear(linesCleared);
+                
                 const uniqueIndices = [...new Set(cellsToRemove)];
                 const cells = gridEl.children;
                 uniqueIndices.forEach(index => {
@@ -1035,7 +1436,23 @@
                 }, 350);
                 const clearScore = linesCleared * 10 + (linesCleared > 1 ? (linesCleared * 20) : 0);
                 updateScore(score + clearScore);
-                if (linesCleared > 1) showComboText(linesCleared);
+                
+                if (linesCleared > 1) {
+                    showComboText(linesCleared);
+                    sfx.playComboSound(linesCleared);
+                }
+                
+                // 更新統計面板
+                updateStatsPanel3();
+                
+                // 觸覺反饋（消除）
+                if (navigator.vibrate && playerStats.settings.hapticEnabled) {
+                    if (linesCleared > 1) {
+                        navigator.vibrate([30, 20, 30]);
+                    } else {
+                        navigator.vibrate(40);
+                    }
+                }
             }
         }
 
@@ -1060,6 +1477,7 @@
         }
 
         function updateScore(newScore) {
+            const oldScore = score;
             score = newScore;
             scoreEl.innerText = score;
             scoreEl.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.3)' }, { transform: 'scale(1)' }], { duration: 200 });
@@ -1067,6 +1485,12 @@
                 bestScore = score;
                 bestScoreEl.innerText = bestScore;
                 localStorage.setItem('blockBlastBestPro', bestScore);
+            }
+            
+            // 可訪問性公告
+            if(window.accessibilityManager3 && score > oldScore) {
+                const points = score - oldScore;
+                window.accessibilityManager3.announce(`獲得 ${points} 分，總分 ${score}`);
             }
         }
 
@@ -1096,12 +1520,109 @@
                     sfx.playGameOver();
                     finalScoreEl.innerText = score;
                     modal.style.display = 'flex';
+                    
+                    // 結束統計
+                    stats3.endGame(score);
+                    
+                    // 震動效果
+                    document.body.classList.add('shake-effect');
+                    setTimeout(() => {
+                        document.body.classList.remove('shake-effect');
+                    }, 500);
+                    
+                    // 可訪問性公告
+                    if(window.accessibilityManager3) {
+                        window.accessibilityManager3.announce(`遊戲結束，最終分數 ${score} 分`);
+                    }
                 }, 500);
             }
         }
 
         restartBtn.addEventListener('click', initGame);
         topRestartBtn.addEventListener('click', initGame);
+
+        // 成就面板功能
+        function openAchievementsPanel3() {
+            const existingPanel = document.getElementById('achievementsPanel3');
+            if (existingPanel) {
+                existingPanel.remove();
+                return;
+            }
+
+            const panel = document.createElement('div');
+            panel.id = 'achievementsPanel3';
+            panel.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.9);
+                z-index: 2000;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            `;
+
+            const content = document.createElement('div');
+            content.style.cssText = `
+                background: linear-gradient(135deg, #FF6B6B, #4ECDC4);
+                border-radius: 15px;
+                padding: 30px;
+                max-width: 700px;
+                max-height: 80vh;
+                overflow-y: auto;
+                position: relative;
+                border: 2px solid #fff;
+                color: white;
+            `;
+
+            content.innerHTML = `
+                <h2 style="margin-bottom: 20px; text-align: center;">🏆 成就系統</h2>
+                <button id="closeAchievements3" style="position: absolute; top: 15px; right: 15px; background: none; border: none; color: white; font-size: 24px; cursor: pointer;">×</button>
+                <div class="achievements-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                    ${Object.values(achievements3).map(achievement => {
+                        const isUnlocked = playerStats.achievements.includes(achievement.id);
+                        return `
+                            <div class="achievement-item ${isUnlocked ? 'unlocked' : ''}" style="
+                                background: ${isUnlocked ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 255, 255, 0.1)'};
+                                border: 2px solid ${isUnlocked ? '#fff' : '#666'};
+                                border-radius: 10px;
+                                padding: 15px;
+                                text-align: center;
+                                transition: all 0.3s;
+                                cursor: pointer;
+                            ">
+                                <div style="font-size: 2rem; margin-bottom: 10px;">${isUnlocked ? achievement.icon : '🔒'}</div>
+                                <div style="font-weight: bold; margin-bottom: 5px;">${achievement.name}</div>
+                                <div style="font-size: 0.8rem; opacity: 0.8;">${achievement.desc}</div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+
+            panel.appendChild(content);
+            document.body.appendChild(panel);
+
+            // 事件監聽
+            document.getElementById('closeAchievements3').onclick = () => {
+                panel.remove();
+                sfx.playSound('button');
+            };
+
+            panel.onclick = (e) => {
+                if (e.target === panel) {
+                    panel.remove();
+                    sfx.playSound('button');
+                }
+            };
+
+            sfx.playSound('button');
+        }
+
+        // 設置成就按鈕事件
+        document.getElementById('achievementsBtn3').addEventListener('click', openAchievementsPanel3);
 
         // Theme toggle button
         document.getElementById('btn-theme').addEventListener('click', toggleTheme);

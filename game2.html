@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>打小鳥大冒險 - 關卡選擇版 (按鍵修正)</title>
+    <!-- Accessibility improvements -->
+    <meta name="description" content="打小鳥射擊遊戲，支持鍵盤和觸控操作，包含多關卡挑戰">
     <style>
         :root {
             --primary: #4CAF50;
@@ -291,36 +293,159 @@
                 text-align: center;
             }
         }
+
+        /* Accessibility improvements */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        button:focus,
+        .level-card:focus {
+            outline: 3px solid var(--primary);
+            outline-offset: 2px;
+            border-radius: 4px;
+        }
+
+        .skip-link {
+            position: absolute;
+            top: -40px;
+            left: 0;
+            background: var(--primary);
+            color: white;
+            padding: 8px;
+            text-decoration: none;
+            border-radius: 0 0 4px 0;
+            z-index: 1001;
+        }
+
+        .skip-link:focus {
+            top: 0;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+
+        /* 成就系統樣式 */
+        .achievements-btn {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background: rgba(255, 193, 7, 0.9);
+            border: none;
+            color: rgba(0, 0, 0, 0.8);
+            padding: 8px 12px;
+            font-size: 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            z-index: 1000;
+            transition: all 0.3s;
+        }
+
+        .achievements-btn:hover {
+            background: rgba(255, 193, 7, 1);
+            transform: scale(1.1);
+        }
+
+        @keyframes achievementSlide2 {
+            0% { transform: translateX(-50%) translateY(-100px); opacity: 0; }
+            100% { transform: translateX(-50%) translateY(0); opacity: 1; }
+        }
+
+        @keyframes comboGlow2 {
+            0% { transform: translateX(-50%) scale(0.5); opacity: 0; }
+            50% { transform: translateX(-50%) scale(1.2); opacity: 1; }
+            100% { transform: translateX(-50%) scale(1); opacity: 0; }
+        }
+
+        /* 統計面板 */
+        .stats-panel {
+            position: fixed;
+            top: 60px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            z-index: 999;
+            min-width: 150px;
+            backdrop-filter: blur(5px);
+        }
+
+        .stat-item {
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .stat-value {
+            color: #FFD700;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
-
-    <div class="main-wrapper">
+    <a href="#game-content" class="skip-link">跳至遊戲內容</a>
+    <div class="main-wrapper" role="main">
         
         <!-- 1. 首頁 -->
-        <div id="home-screen" class="screen active">
+        <div id="home-screen" class="screen active" role="region" aria-label="主選單">
             <h1 class="title">打小鳥大冒險<br><span style="font-size: 1.5rem; color:#FFD700">特別行動版</span></h1>
-            <button class="btn-lg" onclick="showLevelSelect()">開始冒險</button>
+            <button class="btn-lg" onclick="showLevelSelect()" aria-label="開始打小鳥冒險">開始冒險</button>
         </div>
 
         <!-- 2. 關卡選擇面板 -->
-        <div id="level-screen" class="screen">
+        <div id="level-screen" class="screen" role="region" aria-label="關卡選擇">
             <h1 style="color:white; text-shadow: 0 2px 5px rgba(0,0,0,0.5);">選擇關卡</h1>
-            <div class="level-grid" id="levelGrid">
+            <div class="level-grid" id="levelGrid" role="grid" aria-label="可用關卡">
                 <!-- 由 JS 生成 -->
             </div>
-            <button class="back-btn" onclick="showHome()">返回主選單</button>
+            <button class="back-btn" onclick="showHome()" aria-label="返回主選單">返回主選單</button>
         </div>
 
         <!-- 3. 遊戲畫面 -->
-        <div id="game-screen" class="screen">
+        <div id="game-screen" class="screen" role="region" aria-label="遊戲畫面">
+            <!-- 成就按鈕 -->
+            <button class="achievements-btn" id="achievementsBtn2" aria-label="查看成就">🏆</button>
+            
+            <!-- 統計面板 -->
+            <div class="stats-panel" id="statsPanel" aria-label="遊戲統計">
+                <div class="stat-item">
+                    <span>命中率:</span>
+                    <span class="stat-value" id="accuracyStat">0%</span>
+                </div>
+                <div class="stat-item">
+                    <span>連擊:</span>
+                    <span class="stat-value" id="comboStat">0</span>
+                </div>
+                <div class="stat-item">
+                    <span>最佳連擊:</span>
+                    <span class="stat-value" id="bestComboStat">0</span>
+                </div>
+            </div>
+            
             <div class="game-area">
-                <div class="hud">
+                <div class="hud" role="status" aria-live="polite">
                     <span id="hudLevel">關卡: 1</span>
                     <span id="hudScore">分數: 0</span>
                     <span id="hudTimer">30s</span>
                 </div>
-                <canvas id="gameCanvas" width="600" height="400"></canvas>
+                <div id="game-content">
+                    <canvas id="gameCanvas" width="600" height="400" role="application" aria-label="打小鳥遊戲畫布，使用數字鍵1-3選擇關卡，Enter鍵開始，點擊射擊，Esc暫停" tabindex="0"></canvas>
+                </div>
                 <!-- 暫停按鈕放在這裡，確保層級高於 Canvas -->
                 <button id="pauseExitBtn" onclick="pauseGame()">暫停 / 退出</button>
             </div>
@@ -355,11 +480,223 @@
         { name: "專家考驗", time: 30, birdSpeed: [3, 5], birdSize: [25, 40], spawnRate: 600, bombRate: 0.3, stars: [200, 300, 450] }
     ];
 
-    // 玩家進度存檔
+    // 玩家進度存檔 - 增強版
     let playerProgress = JSON.parse(localStorage.getItem('birdHunterProgress')) || {
         maxUnlocked: 1,
-        levelStars: { 1: 0, 2: 0, 3: 0 }
+        levelStars: { 1: 0, 2: 0, 3: 0 },
+        statistics: {
+            totalPlayTime: 0,
+            totalScore: 0,
+            totalHits: 0,
+            totalMisses: 0,
+            perfectRounds: 0,
+            bestCombo: 0,
+            currentCombo: 0,
+            birdsHit: { normal: 0, special: 0 },
+            bombsHit: 0,
+            averageAccuracy: 0,
+            gamesPlayed: 0
+        },
+        achievements: [],
+        settings: {
+            soundEnabled: true,
+            hapticEnabled: true,
+            showHints: true
+        }
     };
+
+    // 成就系統
+    const achievements2 = {
+        firstShot: { id: 'firstShot', name: '初次射擊', desc: '完成第一次射擊', icon: '🎯' },
+        sharpshooter: { id: 'sharpshooter', name: '神射手', desc: '單局命中率達到90%', icon: '🏹' },
+        comboMaster: { id: 'comboMaster', name: '連擊大師', desc: '達成10連擊', icon: '⚡' },
+        bombDodger: { id: 'bombDodger', name: '炸彈閃避者', desc: '完成一局不擊中炸彈', icon: '💣' },
+        speedDemon: { id: 'speedDemon', name: '速度惡魔', desc: '15秒內完成一關', icon: '🏃' },
+        perfectionist: { id: 'perfectionist', name: '完美主義', desc: '完美通關（命中率100%）', icon: '💎' },
+        veteran: { id: 'veteran', name: '老兵', desc: '完成30場遊戲', icon: '🎖️' },
+        highScorer: { id: 'highScorer', name: '高分玩家', desc: '單局得分超過500', icon: '🏆' }
+    };
+
+    // 遊戲統計管理器
+    class GameStatistics2 {
+        constructor() {
+            this.sessionStartTime = Date.now();
+            this.currentGameStartTime = null;
+            this.sessionHits = 0;
+            this.sessionMisses = 0;
+        }
+
+        startGame() {
+            this.currentGameStartTime = Date.now();
+            this.sessionHits = 0;
+            this.sessionMisses = 0;
+            playerProgress.statistics.currentCombo = 0;
+        }
+
+        recordHit(isBomb = false, isSpecial = false) {
+            playerProgress.statistics.totalHits++;
+            this.sessionHits++;
+            playerProgress.statistics.currentCombo++;
+            
+            if (isBomb) {
+                playerProgress.statistics.bombsHit++;
+                playerProgress.statistics.currentCombo = 0; // 重置連擊
+            } else {
+                if (isSpecial) {
+                    playerProgress.statistics.birdsHit.special++;
+                } else {
+                    playerProgress.statistics.birdsHit.normal++;
+                }
+                
+                // 檢查連擊成就
+                if (playerProgress.statistics.currentCombo > playerProgress.statistics.bestCombo) {
+                    playerProgress.statistics.bestCombo = playerProgress.statistics.currentCombo;
+                }
+            }
+            
+            this.updateAccuracy();
+        }
+
+        recordMiss() {
+            playerProgress.statistics.totalMisses++;
+            this.sessionMisses++;
+            playerProgress.statistics.currentCombo = 0;
+            this.updateAccuracy();
+        }
+
+        updateAccuracy() {
+            const total = playerProgress.statistics.totalHits + playerProgress.statistics.totalMisses;
+            if (total > 0) {
+                playerProgress.statistics.averageAccuracy = Math.round(
+                    (playerProgress.statistics.totalHits / total) * 100
+                );
+            }
+        }
+
+        endGame(finalScore, level, perfect = false) {
+            if (!this.currentGameStartTime) return;
+
+            const gameDuration = Date.now() - this.currentGameStartTime;
+            
+            // 更新統計
+            playerProgress.statistics.totalPlayTime += gameDuration;
+            playerProgress.statistics.totalScore += finalScore;
+            playerProgress.statistics.gamesPlayed++;
+            
+            if (perfect) {
+                playerProgress.statistics.perfectRounds++;
+            }
+            
+            // 保存數據
+            this.savePlayerData();
+            
+            // 檢查成就
+            this.checkAchievements(finalScore, level, perfect, gameDuration);
+        }
+
+        checkAchievements(score, level, perfect, duration) {
+            const newAchievements = [];
+
+            // 首次射擊
+            if (playerProgress.statistics.totalHits > 0 && !this.hasAchievement('firstShot')) {
+                newAchievements.push(achievements2.firstShot);
+            }
+
+            // 神射手
+            if (playerProgress.statistics.averageAccuracy >= 90 && !this.hasAchievement('sharpshooter')) {
+                newAchievements.push(achievements2.sharpshooter);
+            }
+
+            // 連擊大師
+            if (playerProgress.statistics.bestCombo >= 10 && !this.hasAchievement('comboMaster')) {
+                newAchievements.push(achievements2.comboMaster);
+            }
+
+            // 速度惡魔
+            if (duration < 15000 && score > 0 && !this.hasAchievement('speedDemon')) {
+                newAchievements.push(achievements2.speedDemon);
+            }
+
+            // 完美主義
+            if (perfect && !this.hasAchievement('perfectionist')) {
+                newAchievements.push(achievements2.perfectionist);
+            }
+
+            // 高分玩家
+            if (score >= 500 && !this.hasAchievement('highScorer')) {
+                newAchievements.push(achievements2.highScorer);
+            }
+
+            // 老兵
+            if (playerProgress.statistics.gamesPlayed >= 30 && !this.hasAchievement('veteran')) {
+                newAchievements.push(achievements2.veteran);
+            }
+
+            // 顯示新成就
+            newAchievements.forEach(achievement => {
+                this.unlockAchievement(achievement);
+            });
+        }
+
+        hasAchievement(id) {
+            return playerProgress.achievements.includes(id);
+        }
+
+        unlockAchievement(achievement) {
+            playerProgress.achievements.push(achievement.id);
+            sfx.playSound('achievement', 2);
+            showAchievementPopup2(achievement);
+            this.savePlayerData();
+        }
+
+        savePlayerData() {
+            localStorage.setItem('birdHunterProgress', JSON.stringify(playerProgress));
+        }
+    }
+
+    const stats2 = new GameStatistics2();
+
+    // 成就彈出函數
+    function showAchievementPopup2(achievement) {
+        const popup = document.createElement('div');
+        popup.style.cssText = `
+            position: fixed;
+            top: 20%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #4CAF50, #8BC34A);
+            color: white;
+            padding: 20px 30px;
+            border-radius: 15px;
+            z-index: 3000;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            animation: achievementSlide2 0.5s ease-out;
+        `;
+        
+        popup.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <div style="font-size: 2.5rem;">${achievement.icon}</div>
+                <div>
+                    <div style="font-size: 1.2rem; font-weight: bold; margin-bottom: 5px;">成就解鎖！</div>
+                    <div style="font-size: 1rem;">${achievement.name}</div>
+                    <div style="font-size: 0.9rem; opacity: 0.9;">${achievement.desc}</div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(popup);
+        
+        // 觸覺反饋
+        if (navigator.vibrate) {
+            navigator.vibrate([20, 30, 20, 30, 20]);
+        }
+        
+        setTimeout(() => {
+            if (popup.parentNode) {
+                popup.remove();
+            }
+        }, 4000);
+    }
 
     // 遊戲狀態變數
     let canvas, ctx;
@@ -373,29 +710,101 @@
     let isPlaying = false;
     let audioCtx;
 
-    // --- 聲音系統 ---
-    function initAudio() {
-        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    // --- 增強聲音系統 ---
+    class EnhancedSoundManager2 {
+        constructor() {
+            this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            this.masterGain = this.audioCtx.createGain();
+            this.masterGain.gain.value = 0.3;
+            this.masterGain.connect(this.audioCtx.destination);
+            this.enabled = true;
+        }
+        
+        resume() {
+            if (this.audioCtx.state === 'suspended') {
+                this.audioCtx.resume();
+            }
+        }
+        
+        playTone(freq, type, duration, vol = 0.1) {
+            if (!this.enabled) return;
+            const osc = this.audioCtx.createOscillator();
+            const gain = this.audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, this.audioCtx.currentTime);
+            gain.gain.setValueAtTime(vol, this.audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, this.audioCtx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(this.masterGain);
+            osc.start();
+            osc.stop(this.audioCtx.currentTime + duration);
+        }
+        
+        playSound(name, variations = 1) {
+            const sounds = {
+                shoot: { freq: 600, duration: 0.08, type: 'triangle', volume: 0.1 },
+                hit: { freq: 800, duration: 0.1, type: 'sine', volume: 0.12 },
+                bomb: { freq: 100, duration: 0.5, type: 'sawtooth', volume: 0.2 },
+                win: { freq: 400, duration: 0.3, type: 'square', volume: 0.15 },
+                achievement: { freq: 1200, duration: 0.4, type: 'sine', volume: 0.15 },
+                button: { freq: 400, duration: 0.06, type: 'square', volume: 0.08 },
+                levelComplete: { freq: 1000, duration: 0.2, type: 'triangle', volume: 0.12 }
+            };
+            
+            const sound = sounds[name];
+            if (!sound) return;
+            
+            this.resume();
+            
+            // 添加音調變化
+            const pitch = 1 + (Math.random() - 0.5) * 0.1 * variations;
+            this.playTone(sound.freq * pitch, sound.type, sound.duration, sound.volume);
+            
+            // 特殊音效處理
+            if (name === 'hit') {
+                setTimeout(() => {
+                    this.playTone(1200 * pitch, 'sine', 0.1, 0.08);
+                }, 50);
+            } else if (name === 'win') {
+                [0, 200, 400].forEach((d, i) => {
+                    setTimeout(() => {
+                        this.playTone((400+i*200) * pitch, 'square', 0.2, 0.12);
+                    }, d);
+                });
+            }
+        }
+        
+        playComboSound(level) {
+            // 根據連擊等級播放不同音效
+            const baseFreq = 300 + (level * 200);
+            this.playTone(baseFreq, 'triangle', 0.15, 0.15);
+            setTimeout(() => {
+                this.playTone(baseFreq * 1.5, 'sine', 0.15, 0.12);
+            }, 100);
+        }
+        
+        setVolume(level) {
+            this.masterGain.gain.value = Math.max(0, Math.min(1, level));
+        }
+        
+        toggle() {
+            this.enabled = !this.enabled;
+            return this.enabled;
+        }
     }
-
-    function playTone(freq, type, duration) {
-        if (!audioCtx || audioCtx.state === 'suspended') return;
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-        gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + duration);
-        osc.start();
-        osc.stop(audioCtx.currentTime + duration);
+    
+    const sfx = new EnhancedSoundManager2();
+    
+    // 保留兼容性
+    function initAudio() {
+        sfx.resume();
     }
 
     const sounds = {
-        shoot: () => { playTone(600, 'triangle', 0.1); },
-        hit: () => { playTone(800, 'sine', 0.1); setTimeout(()=>playTone(1200, 'sine', 0.1), 50); },
-        bomb: () => { playTone(100, 'sawtooth', 0.5); },
-        win: () => { [0, 200, 400].forEach((d, i) => setTimeout(() => playTone(400+i*200, 'square', 0.2), d)); }
+        shoot: () => { sfx.playSound('shoot'); },
+        hit: () => { sfx.playSound('hit'); },
+        bomb: () => { sfx.playSound('bomb'); },
+        win: () => { sfx.playSound('win'); }
     };
 
     // --- 類別定義 ---
@@ -529,22 +938,37 @@
         
         levels.forEach((lvl, idx) => {
             const card = document.createElement('div');
-            card.className = `level-card ${idx + 1 > playerProgress.maxUnlocked ? 'locked' : ''}`;
+            const levelNum = idx + 1;
+            const isUnlocked = levelNum <= playerProgress.maxUnlocked;
             
-            if (idx + 1 > playerProgress.maxUnlocked) {
-                card.innerHTML = `<div class="lock-icon">🔒</div>`;
+            card.className = `level-card ${!isUnlocked ? 'locked' : ''}`;
+            card.setAttribute('role', 'gridcell');
+            card.setAttribute('aria-label', `第${levelNum}關 ${lvl.name}${isUnlocked ? '' : '，未解鎖'}`);
+            card.setAttribute('tabindex', isUnlocked ? '0' : '-1');
+            
+            if (!isUnlocked) {
+                card.innerHTML = `<div class="lock-icon" aria-hidden="true">🔒</div>`;
             } else {
-                const stars = playerProgress.levelStars[idx + 1];
+                const stars = playerProgress.levelStars[levelNum];
                 let starHtml = '';
                 for(let i=0; i<3; i++) {
-                    starHtml += `<span class="star ${i < stars ? 'earned' : ''}">★</span>`;
+                    const isEarned = i < stars;
+                    starHtml += `<span class="star ${isEarned ? 'earned' : ''}" aria-label="${isEarned ? '獲得的星星' : '未獲得的星星'}">★</span>`;
                 }
                 card.innerHTML = `
-                    <div class="level-num">第 ${idx+1} 關</div>
+                    <div class="level-num">第 ${levelNum} 關</div>
                     <div style="font-size:0.9rem; color:#666">${lvl.name}</div>
-                    <div class="level-stars">${starHtml}</div>
+                    <div class="level-stars" role="img" aria-label="已獲得${stars}顆星">${starHtml}</div>
                 `;
                 card.onclick = () => startGame(idx);
+                
+                // 鍵盤支持
+                card.addEventListener('keydown', (e) => {
+                    if(e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        startGame(idx);
+                    }
+                });
             }
             grid.appendChild(card);
         });
@@ -584,8 +1008,12 @@
         initClouds(); // 重新生成雲朵
         isPlaying = true;
         
+        // 開始統計
+        stats2.startGame();
+        
         showScreen('game');
         updateHUD();
+        updateStatsPanel();
 
         // 啟動循環
         clearInterval(gameInterval);
@@ -595,6 +1023,7 @@
             if(!isPlaying) return;
             timeLeft--;
             updateHUD();
+            updateStatsPanel();
             if(timeLeft <= 0) endGame();
         }, 1000);
 
@@ -620,20 +1049,40 @@
             const ent = entities[i];
             if (ent.checkClick(x, y)) {
                 hit = true;
+                
                 if (ent.isBomb) {
                     // 點到炸彈
-                    sounds.bomb();
+                    sfx.playSound('bomb');
                     score -= 20;
+                    stats2.recordHit(true, false); // 炸彈擊中
                     createExplosion(ent.x, ent.y, '#ff0000');
                     shakeScreen();
                     showFloatText(x, y, "-20", "red");
+                    
+                    // 觸覺反饋
+                    if (navigator.vibrate) {
+                        navigator.vibrate([100, 50, 100]);
+                    }
                 } else {
                     // 點到鳥
-                    sounds.hit();
+                    sfx.playSound('hit');
                     score += 10;
+                    stats2.recordHit(false, ent.color.includes('special')); // 特殊鳥檢測
                     createExplosion(ent.x, ent.y, ent.color);
                     showFloatText(x, y, "+10", "gold");
+                    
+                    // 連擊音效
+                    if (playerProgress.statistics.currentCombo > 0 && playerProgress.statistics.currentCombo % 5 === 0) {
+                        sfx.playComboSound(Math.floor(playerProgress.statistics.currentCombo / 5));
+                        showComboIndicator(playerProgress.statistics.currentCombo);
+                    }
+                    
+                    // 觸覺反饋
+                    if (navigator.vibrate) {
+                        navigator.vibrate(30);
+                    }
                 }
+                
                 entities.splice(i, 1);
                 updateHUD();
                 break;
@@ -641,9 +1090,41 @@
         }
 
         if (!hit) {
-            // 空槍不扣分了，但可以加個小音效
-            sounds.shoot();
+            // 空槍
+            sfx.playSound('shoot');
+            stats2.recordMiss(); // 記錄失誤
+            
+            // 輕微觸覺反饋
+            if (navigator.vibrate) {
+                navigator.vibrate(10);
+            }
         }
+    }
+
+    // 連擊指示器
+    function showComboIndicator(combo) {
+        const existing = document.querySelector('.combo-indicator2');
+        if (existing) existing.remove();
+        
+        const indicator = document.createElement('div');
+        indicator.className = 'combo-indicator2';
+        indicator.style.cssText = `
+            position: fixed;
+            top: 30%;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 2rem;
+            font-weight: bold;
+            color: #FF6B35;
+            text-shadow: 0 0 20px rgba(255, 107, 53, 0.8);
+            z-index: 1000;
+            pointer-events: none;
+            animation: comboGlow2 0.8s ease-out;
+        `;
+        indicator.textContent = `${combo} HIT COMBO!`;
+        
+        document.body.appendChild(indicator);
+        setTimeout(() => indicator.remove(), 1500);
     }
 
     function createExplosion(x, y, color) {
@@ -670,6 +1151,12 @@
         document.getElementById('hudScore').textContent = `分數: ${score}`;
         document.getElementById('hudTimer').textContent = `${timeLeft}s`;
         document.getElementById('hudLevel').textContent = `第 ${currentLevelIdx+1} 關`;
+    }
+
+    function updateStatsPanel() {
+        document.getElementById('accuracyStat').textContent = `${playerProgress.statistics.averageAccuracy}%`;
+        document.getElementById('comboStat').textContent = playerProgress.statistics.currentCombo;
+        document.getElementById('bestComboStat').textContent = playerProgress.statistics.bestCombo;
     }
 
     function drawBackground() {
@@ -756,13 +1243,24 @@
         else if (score >= lvlData.stars[1]) starCount = 2;
         else if (score >= lvlData.stars[0]) starCount = 1;
 
+        // 檢查是否完美關卡（無失誤）
+        const perfect = quit ? false : (stats2.sessionMisses === 0 && score > 0);
+
         if (quit) {
             title.textContent = "已退出";
             starCount = 0;
         } else {
             title.textContent = starCount > 0 ? "挑戰成功!" : "再接再厲!";
-            sounds.win();
+            sfx.playSound('win');
+            
+            if (perfect) {
+                sfx.playSound('achievement');
+                showFloatText(300, 200, "PERFECT!", "#FFD700");
+            }
         }
+
+        // 統計遊戲結果
+        stats2.endGame(score, currentLevelIdx, perfect);
 
         // 更新星星顯示
         const starsDom = starsContainer.querySelectorAll('.star');
@@ -789,8 +1287,287 @@
         startGame(currentLevelIdx);
     }
 
+    // 可訪問性管理器
+    class AccessibilityManager2 {
+        constructor() {
+            this.announcementQueue = [];
+            this.isAnnouncing = false;
+            this.init();
+        }
+
+        init() {
+            this.setupKeyboardNavigation();
+            this.setupCanvasKeyboardControl();
+            this.showKeyboardHint();
+        }
+
+        setupKeyboardNavigation() {
+            document.addEventListener('keydown', (e) => {
+                // 數字鍵快速選擇關卡
+                if (screens.level.classList.contains('active')) {
+                    if (e.key >= '1' && e.key <= '3') {
+                        const levelIndex = parseInt(e.key) - 1;
+                        if (levelIndex < levels.length && levelIndex < playerProgress.maxUnlocked) {
+                            e.preventDefault();
+                            startGame(levelIndex);
+                        }
+                    }
+                }
+
+                // 遊戲中的鍵盤控制
+                if (screens.game.classList.contains('active') && isPlaying) {
+                    if (e.key === 'Escape' || e.key === 'p' || e.key === 'P') {
+                        e.preventDefault();
+                        this.announce('暫停遊戲');
+                        pauseGame();
+                    }
+                    
+                    // Tab鍵導航
+                    if (e.key === 'Tab') {
+                        this.handleTabNavigation(e);
+                    }
+                }
+            });
+        }
+
+        setupCanvasKeyboardControl() {
+            const gameCanvas = document.getElementById('gameCanvas');
+            
+            gameCanvas.addEventListener('keydown', (e) => {
+                if (!isPlaying) return;
+                
+                // 使用鍵盤模擬點擊射擊
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    // 在畫布中心模擬點擊
+                    const rect = gameCanvas.getBoundingClientRect();
+                    const centerX = rect.left + rect.width / 2;
+                    const centerY = rect.top + rect.height / 2;
+                    this.simulateClick(centerX, centerY);
+                }
+            });
+
+            gameCanvas.addEventListener('focus', () => {
+                if (isPlaying) {
+                    this.announceGameState();
+                }
+            });
+        }
+
+        simulateClick(x, y) {
+            const clickEvent = {
+                clientX: x,
+                clientY: y,
+                preventDefault: () => {}
+            };
+            handleClick(clickEvent);
+        }
+
+        handleTabNavigation(e) {
+            const focusableElements = document.querySelectorAll(
+                'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+            );
+            const firstElement = focusableElements[0];
+            const lastElement = focusableElements[focusableElements.length - 1];
+
+            if(e.shiftKey) {
+                if(document.activeElement === firstElement) {
+                    e.preventDefault();
+                    lastElement.focus();
+                }
+            } else {
+                if(document.activeElement === lastElement) {
+                    e.preventDefault();
+                    firstElement.focus();
+                }
+            }
+        }
+
+        announce(message) {
+            this.announcementQueue.push(message);
+            if(!this.isAnnouncing) {
+                this.processAnnouncementQueue();
+            }
+        }
+
+        processAnnouncementQueue() {
+            if(this.announcementQueue.length === 0) {
+                this.isAnnouncing = false;
+                return;
+            }
+
+            this.isAnnouncing = true;
+            const message = this.announcementQueue.shift();
+            
+            const announcement = document.createElement('div');
+            announcement.setAttribute('aria-live', 'polite');
+            announcement.setAttribute('aria-atomic', 'true');
+            announcement.className = 'sr-only';
+            announcement.textContent = message;
+            document.body.appendChild(announcement);
+            
+            setTimeout(() => {
+                if(announcement.parentNode) {
+                    document.body.removeChild(announcement);
+                }
+                this.processAnnouncementQueue();
+            }, 100);
+        }
+
+        announceGameState() {
+            if (isPlaying) {
+                this.announce(`第${currentLevelIdx + 1}關，剩餘時間${timeLeft}秒，目前分數${score}分`);
+            }
+        }
+
+        announceHit(entity, points) {
+            if (entity.isBomb) {
+                this.announce('擊中炸彈，扣20分');
+            } else {
+                this.announce(`擊中小鳥，加10分`);
+            }
+        }
+
+        showKeyboardHint() {
+            const hint = document.createElement('div');
+            hint.style.cssText = `
+                position: fixed;
+                bottom: 10px;
+                right: 10px;
+                background: rgba(0, 0, 0, 0.8);
+                color: white;
+                padding: 10px;
+                border-radius: 8px;
+                font-size: 0.9rem;
+                z-index: 1000;
+                max-width: 300px;
+            `;
+            hint.innerHTML = `
+                <strong>鍵盤操作：</strong><br>
+                • 數字鍵1-3：快速選擇關卡<br>
+                • Enter/空格：射擊（遊戲中）<br>
+                • Esc/P：暫停遊戲<br>
+                • Tab：導航界面元素
+            `;
+            document.body.appendChild(hint);
+            
+            setTimeout(() => {
+                if(hint.parentNode) {
+                    hint.remove();
+                }
+            }, 5000);
+        }
+    }
+
+    // 成就面板功能
+    function openAchievementsPanel2() {
+        const existingPanel = document.getElementById('achievementsPanel2');
+        if (existingPanel) {
+            existingPanel.remove();
+            return;
+        }
+
+        const panel = document.createElement('div');
+        panel.id = 'achievementsPanel2';
+        panel.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 2000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        `;
+
+        const content = document.createElement('div');
+        content.style.cssText = `
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+            border: 2px solid #FFD700;
+            color: white;
+        `;
+
+        content.innerHTML = `
+            <h2 style="margin-bottom: 20px; text-align: center;">🏆 成就系統</h2>
+            <button id="closeAchievements2" style="position: absolute; top: 15px; right: 15px; background: none; border: none; color: white; font-size: 24px; cursor: pointer;">×</button>
+            <div class="achievements-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                ${Object.values(achievements2).map(achievement => {
+                    const isUnlocked = playerProgress.achievements.includes(achievement.id);
+                    return `
+                        <div class="achievement-item ${isUnlocked ? 'unlocked' : ''}" style="
+                            background: ${isUnlocked ? 'rgba(255, 215, 0, 0.2)' : 'rgba(255, 255, 255, 0.1)'};
+                            border: 2px solid ${isUnlocked ? '#FFD700' : '#666'};
+                            border-radius: 10px;
+                            padding: 15px;
+                            text-align: center;
+                            transition: all 0.3s;
+                        ">
+                            <div style="font-size: 2rem; margin-bottom: 10px;">${isUnlocked ? achievement.icon : '🔒'}</div>
+                            <div style="font-weight: bold; margin-bottom: 5px;">${achievement.name}</div>
+                            <div style="font-size: 0.8rem; opacity: 0.8;">${achievement.desc}</div>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        `;
+
+        panel.appendChild(content);
+        document.body.appendChild(panel);
+
+        // 事件監聽
+        document.getElementById('closeAchievements2').onclick = () => {
+            panel.remove();
+            sfx.playSound('button');
+        };
+
+        panel.onclick = (e) => {
+            if (e.target === panel) {
+                panel.remove();
+                sfx.playSound('button');
+            }
+        };
+
+        sfx.playSound('button');
+    }
+
+    // 設置成就按鈕事件
+    document.addEventListener('DOMContentLoaded', () => {
+        const achievementsBtn = document.getElementById('achievementsBtn2');
+        if (achievementsBtn) {
+            achievementsBtn.addEventListener('click', openAchievementsPanel2);
+        }
+    });
+
     // 初始化
     init();
+    
+    // 初始化可訪問性管理器
+    window.accessibilityManager2 = new AccessibilityManager2();
+    
+    // 增強點擊處理，添加可訪問性公告
+    const originalHandleClick = handleClick;
+    handleClick = function(e) {
+        const prevScore = score;
+        originalHandleClick(e);
+        
+        // 公告擊中結果
+        if (window.accessibilityManager2 && score !== prevScore) {
+            const points = score - prevScore;
+            if (points > 0) {
+                window.accessibilityManager2.announceHit({ isBomb: false }, points);
+            } else if (points < 0) {
+                window.accessibilityManager2.announceHit({ isBomb: true }, points);
+            }
+        }
+    };
 
 </script>
 </body>
