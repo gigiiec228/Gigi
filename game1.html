@@ -570,6 +570,68 @@
             height: 300px;
         }
 
+        /* 設定面板樣式 */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #555;
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .toggle-slider {
+            background-color: var(--primary);
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(26px);
+        }
+
+        select {
+            background: #333;
+            border: 1px solid #444;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 1rem;
+            width: 60%;
+            cursor: pointer;
+        }
+
+        select:focus {
+            outline: 3px solid var(--accent);
+            outline-offset: 2px;
+        }
+
         @media (prefers-reduced-motion: reduce) {
             * {
                 animation-duration: 0.01ms !important;
@@ -639,6 +701,36 @@
                     <button class="accessory-option" data-acc="crown" role="radio" aria-checked="false" aria-label="皇冠">👑</button>
                 </div>
             </fieldset>
+        </div>
+
+        <!-- 遊戲設定 -->
+        <div class="card">
+            <h3>遊戲設定</h3>
+            <div class="input-group">
+                <label for="soundToggle">音效</label>
+                <div class="toggle-switch">
+                    <input type="checkbox" id="soundToggle" checked aria-describedby="sound-help">
+                    <span class="toggle-slider"></span>
+                </div>
+            </div>
+            <div class="input-group">
+                <label for="hapticToggle">觸覺反饋</label>
+                <div class="toggle-switch">
+                    <input type="checkbox" id="hapticToggle" checked aria-describedby="haptic-help">
+                    <span class="toggle-slider"></span>
+                </div>
+            </div>
+            <div class="input-group">
+                <label for="difficultySelect">難度</label>
+                <select id="difficultySelect" aria-describedby="difficulty-help">
+                    <option value="easy">簡單</option>
+                    <option value="normal" selected>普通</option>
+                    <option value="hard">困難</option>
+                </select>
+            </div>
+            <div id="sound-help" class="sr-only">開啟或關閉遊戲音效</div>
+            <div id="haptic-help" class="sr-only">開啟或關閉觸覺反饋（震動）</div>
+            <div id="difficulty-help" class="sr-only">選擇遊戲難度：簡單、普通或困難</div>
         </div>
 
         <button class="btn-large" id="startGameBtn" aria-label="開始貪食蛇遊戲">開始遊戲</button>
@@ -876,6 +968,9 @@
             head: document.getElementById('colorHead'),
             body1: document.getElementById('colorBody1'),
             body2: document.getElementById('colorBody2'),
+            sound: document.getElementById('soundToggle'),
+            haptic: document.getElementById('hapticToggle'),
+            difficulty: document.getElementById('difficultySelect')
         },
         display: {
             highScore: document.getElementById('lobbyHighScore'),
@@ -899,6 +994,11 @@
         dom.inputs.body1.value = player.skin.body1;
         dom.inputs.body2.value = player.skin.body2;
         
+        // 載入設定
+        dom.inputs.sound.checked = player.settings.soundEnabled;
+        dom.inputs.haptic.checked = player.settings.hapticEnabled;
+        dom.inputs.difficulty.value = player.settings.difficulty;
+        
         dom.display.highScore.textContent = player.highScore;
         dom.display.gamesPlayed.textContent = player.gamesPlayed;
 
@@ -920,6 +1020,19 @@
         player.skin.body1 = dom.inputs.body1.value;
         player.skin.body2 = dom.inputs.body2.value;
         
+        // 儲存設定
+        player.settings.soundEnabled = dom.inputs.sound.checked;
+        player.settings.hapticEnabled = dom.inputs.haptic.checked;
+        player.settings.difficulty = dom.inputs.difficulty.value;
+        
+        // 應用設定到管理器
+        if (sfx) {
+            sfx.enabled = player.settings.soundEnabled;
+        }
+        if (haptic) {
+            haptic.enabled = player.settings.hapticEnabled;
+        }
+        
         localStorage.setItem('snakeRPG_Player', JSON.stringify(player));
         dom.display.highScore.textContent = player.highScore;
         updateAvatarPreview();
@@ -927,7 +1040,11 @@
 
     // 事件監聽：輸入變化時即時更新
     Object.values(dom.inputs).forEach(input => {
-        input.addEventListener('input', savePlayer);
+        if (input.type === 'checkbox' || input.tagName === 'SELECT') {
+            input.addEventListener('change', savePlayer);
+        } else {
+            input.addEventListener('input', savePlayer);
+        }
     });
 
     // 事件監聽：配件選擇
@@ -994,6 +1111,7 @@
     let gameSpeed = 130;
     let isPaused = false;
     let isGameOver = false;
+    let isPlaying = false; // 新增：遊戲進行中狀態
     let gameLoopId;
     let lastTime = 0;
 
@@ -1092,6 +1210,130 @@
         sfx.playSound(type);
     }
 
+    // 觸覺反饋管理器
+    class HapticFeedbackManager {
+        constructor() {
+            this.enabled = true;
+            this.vibrationPatterns = {
+                move: [50],
+                eat: [100, 50, 100],
+                gold: [200, 100, 200],
+                die: [300, 100, 300, 100, 300],
+                error: [400, 200, 400],
+                success: [100, 50, 100, 50, 100],
+                achievement: [150, 100, 150, 100, 150]
+            };
+        }
+        
+        provideFeedback(type) {
+            if (!this.enabled || !navigator.vibrate) return;
+            
+            const pattern = this.vibrationPatterns[type] || [100];
+            navigator.vibrate(pattern);
+        }
+        
+        toggle() {
+            this.enabled = !this.enabled;
+            return this.enabled;
+        }
+    }
+
+    // 微交互管理器
+    class MicroInteractionsManager {
+        constructor() {
+            this.setupButtonEffects();
+            this.setupInputFeedback();
+        }
+        
+        setupButtonEffects() {
+            document.querySelectorAll('button, .accessory-option, .d-btn').forEach(element => {
+                element.addEventListener('click', (e) => {
+                    this.addClickEffect(e);
+                });
+                
+                element.addEventListener('mouseenter', () => {
+                    this.addHoverEffect(element);
+                });
+                
+                element.addEventListener('mouseleave', () => {
+                    this.removeHoverEffect(element);
+                });
+            });
+        }
+        
+        setupInputFeedback() {
+            document.querySelectorAll('input').forEach(input => {
+                input.addEventListener('focus', () => {
+                    input.classList.add('pulse-effect');
+                });
+                
+                input.addEventListener('blur', () => {
+                    input.classList.remove('pulse-effect');
+                });
+                
+                input.addEventListener('input', () => {
+                    sfx.playSound('move');
+                });
+            });
+        }
+        
+        addClickEffect(e) {
+            const ripple = document.createElement('span');
+            ripple.style.cssText = `
+                position: absolute;
+                border-radius: 50%;
+                background: rgba(255, 255, 255, 0.6);
+                width: 20px;
+                height: 20px;
+                pointer-events: none;
+                transform: translate(-50%, -50%) scale(0);
+                animation: ripple 0.6s ease-out;
+            `;
+            
+            const rect = e.currentTarget.getBoundingClientRect();
+            ripple.style.left = (e.clientX - rect.left) + 'px';
+            ripple.style.top = (e.clientY - rect.top) + 'px';
+            
+            e.currentTarget.style.position = 'relative';
+            e.currentTarget.appendChild(ripple);
+            
+            setTimeout(() => ripple.remove(), 600);
+        }
+        
+        addHoverEffect(element) {
+            element.style.transform = 'scale(1.05)';
+            element.style.transition = 'transform 0.2s';
+        }
+        
+        removeHoverEffect(element) {
+            element.style.transform = 'scale(1)';
+        }
+        
+        showScorePopup(points, x, y) {
+            const popup = document.createElement('div');
+            popup.className = 'score-popup';
+            popup.textContent = (points > 0 ? '+' : '') + points;
+            popup.style.left = x + 'px';
+            popup.style.top = y + 'px';
+            popup.style.color = points > 0 ? '#4caf50' : '#ff5252';
+            
+            document.body.appendChild(popup);
+            setTimeout(() => popup.remove(), 1000);
+        }
+        
+        showComboIndicator(combo) {
+            const existing = document.querySelector('.combo-indicator');
+            if (existing) existing.remove();
+            
+            const indicator = document.createElement('div');
+            indicator.className = 'combo-indicator';
+            indicator.textContent = combo > 3 ? 'SUPER COMBO!' : `COMBO x${combo}`;
+            
+            document.body.appendChild(indicator);
+            setTimeout(() => indicator.remove(), 1500);
+        }
+    }
+
     // 切換畫面
     document.getElementById('startGameBtn').addEventListener('click', () => {
         dom.lobby.style.display = 'none';
@@ -1122,6 +1364,7 @@
         gameSpeed = 130;
         isGameOver = false;
         isPaused = false;
+        isPlaying = true; // 設置遊戲進行中
         
         // 開始統計
         stats.startGame();
@@ -1234,6 +1477,7 @@
 
     function gameOver(reason) {
         isGameOver = true;
+        isPlaying = false; // 設置遊戲結束
         playSound('die');
         haptic.provideFeedback('error');
         
@@ -1745,109 +1989,14 @@
     // 啟動
     initLobby();
     
-    // 初始化可訪問性管理器
-    window.accessibilityManager = new AccessibilityManager();
-    
-    // 設置Canvas焦點支持
-    const gameCanvas = document.getElementById('gameCanvas');
-    gameCanvas.addEventListener('focus', () => {
-        if(window.accessibilityManager && isPlaying) {
-            window.accessibilityManager.announceGameState();
-        }
-    });
-                
-                element.addEventListener('mouseenter', () => {
-                    this.addHoverEffect(element);
-                });
-                
-                element.addEventListener('mouseleave', () => {
-                    this.removeHoverEffect(element);
-                });
-            });
-        }
-        
-        setupInputFeedback() {
-            document.querySelectorAll('input').forEach(input => {
-                input.addEventListener('focus', () => {
-                    input.classList.add('pulse-effect');
-                });
-                
-                input.addEventListener('blur', () => {
-                    input.classList.remove('pulse-effect');
-                });
-                
-                input.addEventListener('input', () => {
-                    sfx.playSound('move');
-                });
-            });
-        }
-        
-        addClickEffect(e) {
-            const ripple = document.createElement('span');
-            ripple.style.cssText = `
-                position: absolute;
-                border-radius: 50%;
-                background: rgba(255, 255, 255, 0.6);
-                width: 20px;
-                height: 20px;
-                pointer-events: none;
-                transform: translate(-50%, -50%) scale(0);
-                animation: ripple 0.6s ease-out;
-            `;
-            
-            const rect = e.currentTarget.getBoundingClientRect();
-            ripple.style.left = (e.clientX - rect.left) + 'px';
-            ripple.style.top = (e.clientY - rect.top) + 'px';
-            
-            e.currentTarget.style.position = 'relative';
-            e.currentTarget.appendChild(ripple);
-            
-            setTimeout(() => ripple.remove(), 600);
-        }
-        
-        addHoverEffect(element) {
-            element.style.transform = 'scale(1.05)';
-            element.style.transition = 'transform 0.2s';
-        }
-        
-        removeHoverEffect(element) {
-            element.style.transform = 'scale(1)';
-        }
-        
-        showScorePopup(points, x, y) {
-            const popup = document.createElement('div');
-            popup.className = 'score-popup';
-            popup.textContent = (points > 0 ? '+' : '') + points;
-            popup.style.left = x + 'px';
-            popup.style.top = y + 'px';
-            popup.style.color = points > 0 ? '#4caf50' : '#ff5252';
-            
-            document.body.appendChild(popup);
-            setTimeout(() => popup.remove(), 1000);
-        }
-        
-        showComboIndicator(combo) {
-            const existing = document.querySelector('.combo-indicator');
-            if (existing) existing.remove();
-            
-            const indicator = document.createElement('div');
-            indicator.className = 'combo-indicator';
-            indicator.textContent = combo > 3 ? 'SUPER COMBO!' : `COMBO x${combo}`;
-            
-            document.body.appendChild(indicator);
-            setTimeout(() => indicator.remove(), 1500);
-        }
-    }
-
+    // 初始化管理器
     const haptic = new HapticFeedbackManager();
     const microInteractions = new MicroInteractionsManager();
-
-    // 初始化可訪問性管理器
     window.accessibilityManager = new AccessibilityManager();
     
     // 設置Canvas焦點支持
-    const gameCanvas = document.getElementById('gameCanvas');
-    gameCanvas.addEventListener('focus', () => {
+    const gameCanvasElement = document.getElementById('gameCanvas');
+    gameCanvasElement.addEventListener('focus', () => {
         if(window.accessibilityManager && isPlaying) {
             window.accessibilityManager.announceGameState();
         }
